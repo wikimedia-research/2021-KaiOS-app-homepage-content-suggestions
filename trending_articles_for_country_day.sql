@@ -46,7 +46,7 @@ WITH views_by_page_title AS (
     FROM filtered_views_by_canonical_title
 )
 SELECT
-    DATE(CONCAT_WS("-", {year}, {month}, {day})) AS date,
+    DATE(CONCAT_WS("-", {year}, LPAD(CAST({month} AS STRING), 2, '0'), LPAD(CAST({day} AS STRING), 2, '0'))) AS date,
     '{country}' AS country,
     *
 FROM trending
