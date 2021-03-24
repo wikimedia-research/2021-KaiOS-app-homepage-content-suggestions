@@ -1,3 +1,4 @@
+-- Written for Spark 2.4.4
 WITH views_by_page_title AS (
     SELECT
         page_id,
