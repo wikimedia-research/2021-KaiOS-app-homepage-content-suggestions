@@ -9,16 +9,22 @@ from pathlib import Path
 import pandas as pd
 import requests
 from requests_oauthlib import OAuth1
-import wmfdata as wmf
-from wmfdata.utils import (
+import wmfdata_ta as wmf
+from wmfdata_ta.utils import (
     pd_display_all, 
     print_err
 )
 
 from secrets import oauth_config
 
+NOW = pd.Timestamp.now()
+
+# Helps navigation of logs when running this as a cron job
+print_err(f"###### Running trending_articles.py at {NOW.strftime('%Y-%m-%d %H:%M:%S')} ######")
+
 # A CSV holding past trending articles, for rate-limiting frequent entries and as a log
-ARCHIVE_FILE = "trending_articles.csv"
+ARCHIVE_FILE = "/home/neilpquinn-wmf/2021-KaiOS-app-homepage-content-suggestions/trending_articles.csv"
+QUERY_FILE = "/home/neilpquinn-wmf/2021-KaiOS-app-homepage-content-suggestions/trending_articles_for_country_day.sql"
 
 # Mapping of trending article lists to recommendation pages
 # Every list goes on its own country's page for production plus others for testing
@@ -81,7 +87,6 @@ def sql_tuple(i):
     `", ".join` requires a lot of messing around with quote marks and escaping. Using the
     string representation of a Python tuple *almost* works, but fails when there's just
     one element, because SQL doesn't accept the trailing comma that Python uses.
-
     What we really want is the string representation of a Python list, but using parentheses
     instead of brackets. This function turns an iterable into just that.
     """
@@ -98,7 +103,7 @@ def sql_tuple(i):
     return "(" + list_repr[1:-1] + ")"
 
 def get_trending_articles(country, year, month, day, recently_trending):
-    query = Path("trending_articles_for_country_day.sql").read_text()
+    query = Path(QUERY_FILE).read_text()
 
     if recently_trending:
         not_recently_trending_clause = f"AND canonical_title NOT IN {recently_trending}"
@@ -148,7 +153,9 @@ def update_lists(lists, archive, year, month, day):
         results = get_trending_articles(country, year, month, day, recently_trending)
         records = results.to_dict("records")
         for r in records:
-            summary_data = REST_API_SESSION.get(REST_API_URL + "page/summary/" + r["article"]).json()
+            # We need to make sure the title is percent-encoded
+            encoded_title = requests.utils.quote(r["article"], safe='')
+            summary_data = REST_API_SESSION.get(REST_API_URL + "page/summary/" + encoded_title).json()
 
             # This title uses spaces rather than underscores and, if the initial title was a redirect, will be the destination
             r["title"] = summary_data["title"]
@@ -187,18 +194,14 @@ def update_lists(lists, archive, year, month, day):
     return archive
 
 if __name__ == "__main__":
-    a = argparse.ArgumentParser()
-    a.add_argument("year", type=int)
-    a.add_argument("month", type=int)
-    a.add_argument("day", type=int)
-    args = a.parse_args()
+    yesterday = NOW - pd.DateOffset(days=1)
     
     try:
         archive = pd.read_csv(ARCHIVE_FILE, parse_dates=["date"])
     except FileNotFoundError:
         archive = None
 
-    archive = update_lists(LISTS, archive, args.year, args.month, args.day)
+    archive = update_lists(LISTS, archive, yesterday.year, yesterday.month, yesterday.day)
 
     archive.sort_values(["date", "country", "rank"]).to_csv(ARCHIVE_FILE, index=False)
 
