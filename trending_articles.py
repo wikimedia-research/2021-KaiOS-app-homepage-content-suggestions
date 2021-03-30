@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/home/neilpquinn-wmf/venv/bin/python3
 # coding: utf-8
 
 import argparse
@@ -9,8 +9,8 @@ from pathlib import Path
 import pandas as pd
 import requests
 from requests_oauthlib import OAuth1
-import wmfdata_ta as wmf
-from wmfdata_ta.utils import (
+import wmfdata as wmf
+from wmfdata.utils import (
     pd_display_all, 
     print_err
 )
@@ -20,7 +20,18 @@ from secrets import oauth_config
 NOW = pd.Timestamp.now()
 
 # Helps navigation of logs when running this as a cron job
-print_err(f"###### Running trending_articles.py at {NOW.strftime('%Y-%m-%d %H:%M:%S')} ######")
+print_err(f"###### trending_articles.py at {NOW.strftime('%Y-%m-%d %H:%M:%S')} ######")
+
+# If this is being run as analytics-product, run `kerberos-run-command` to ensure there is a 
+# Kerberos ticket, since PySpark will not use the keytab automatically
+if os.getenv('LOGNAME') == "analytics-product":
+    subprocess.call([
+        "/usr/local/bin/kerberos-run-command", 
+        "analytics-product", 
+        "echo", 
+        "'Running kerberos-run-command to ensure analytics-product has a Kerberos ticket...'"
+    ])
+    
 
 # A CSV holding past trending articles, for rate-limiting frequent entries and as a log
 ARCHIVE_FILE = "/home/neilpquinn-wmf/2021-KaiOS-app-homepage-content-suggestions/trending_articles.csv"
