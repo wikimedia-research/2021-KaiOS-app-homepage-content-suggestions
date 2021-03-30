@@ -5,33 +5,14 @@ import argparse
 import json
 import os
 from pathlib import Path
+import subprocess
 
 import pandas as pd
 import requests
 from requests_oauthlib import OAuth1
 import wmfdata as wmf
-from wmfdata.utils import (
-    pd_display_all, 
-    print_err
-)
 
 from secrets import oauth_config
-
-NOW = pd.Timestamp.now()
-
-# Helps navigation of logs when running this as a cron job
-print_err(f"###### trending_articles.py at {NOW.strftime('%Y-%m-%d %H:%M:%S')} ######")
-
-# If this is being run as analytics-product, run `kerberos-run-command` to ensure there is a 
-# Kerberos ticket, since PySpark will not use the keytab automatically
-if os.getenv('LOGNAME') == "analytics-product":
-    subprocess.call([
-        "/usr/local/bin/kerberos-run-command", 
-        "analytics-product", 
-        "echo", 
-        "'Running kerberos-run-command to ensure analytics-product has a Kerberos ticket...'"
-    ])
-    
 
 # A CSV holding past trending articles, for rate-limiting frequent entries and as a log
 ARCHIVE_FILE = "/home/neilpquinn-wmf/2021-KaiOS-app-homepage-content-suggestions/trending_articles.csv"
@@ -205,16 +186,39 @@ def update_lists(lists, archive, year, month, day):
     return archive
 
 if __name__ == "__main__":
-    yesterday = NOW - pd.DateOffset(days=1)
+    NOW = pd.Timestamp.now()
+    YESTERDAY = NOW - pd.DateOffset(days=1)
+
+    # Helps navigation of logs when running this as a cron job. For some reason, output from 
+    # the print function doesn't appear in the logs, so calling echo as a workaround.
+    subprocess.call([
+        "echo", 
+        f"###### trending_articles.py at {NOW.strftime('%Y-%m-%d %H:%M:%S')} ######"
+    ])
+
+    # If this is being run as analytics-product, run `kerberos-run-command` to ensure there is a 
+    # Kerberos ticket, since PySpark will not use the keytab automatically
+    if os.getenv('LOGNAME') == "analytics-product":
+        subprocess.call([
+            "/usr/local/bin/kerberos-run-command", 
+            "analytics-product", 
+            "echo", 
+            "'Running kerberos-run-command to ensure analytics-product has a Kerberos ticket...'"
+        ])
     
     try:
         archive = pd.read_csv(ARCHIVE_FILE, parse_dates=["date"])
     except FileNotFoundError:
         archive = None
 
-    archive = update_lists(LISTS, archive, yesterday.year, yesterday.month, yesterday.day)
+    archive = update_lists(LISTS, archive, YESTERDAY.year, YESTERDAY.month, YESTERDAY.day)
 
-    archive.sort_values(["date", "country", "rank"]).to_csv(ARCHIVE_FILE, index=False)
+    (
+        archive
+        .drop_duplicates(subset=["date", "country", "rank"])
+        .sort_values(["date", "country", "rank"])
+        .to_csv(ARCHIVE_FILE, index=False)
+    )
 
     # Hard exit; otherwise, a PySpark thread blocks exit, even with sys.exit()
     os._exit(os.EX_OK)
