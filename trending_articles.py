@@ -26,7 +26,7 @@ LISTS = {
     # Pakistan list
     "PK": ["PK", "IN", "DE"],
     # Tanzania list
-    "TZ": ["TZ", "US"],
+    "TZ": ["TZ", "US", "PR"],
     # Uganda list
     "UG": ["UG", "CA"]
 }
