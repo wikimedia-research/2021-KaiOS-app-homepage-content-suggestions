@@ -21,10 +21,11 @@ QUERY_FILE = "/home/neilpquinn-wmf/2021-KaiOS-app-homepage-content-suggestions/t
 # Mapping of trending article lists to recommendation pages
 # Every list goes on its own country's page for production plus others for testing
 LISTS = {
+    "IN": ["IN"],
     # Nigeria list
     "NG": ["NG", "KE", "PT"],
     # Pakistan list
-    "PK": ["PK", "IN", "DE"],
+    "PK": ["PK", "DE"],
     # Tanzania list
     "TZ": ["TZ", "US", "PR"],
     # Uganda list
