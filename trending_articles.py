@@ -1,7 +1,6 @@
 #!/home/neilpquinn-wmf/venv/bin/python3
 # coding: utf-8
 
-import argparse
 import json
 import os
 from pathlib import Path
