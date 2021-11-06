@@ -1,4 +1,4 @@
-#!/home/neilpquinn-wmf/venv/bin/python3
+#!/home/neilpquinn-wmf/.conda/envs/trending_articles/bin/python3
 # coding: utf-8
 
 import json
