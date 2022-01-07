@@ -13,9 +13,11 @@ import wmfdata as wmf
 
 from secrets import oauth_config
 
+JOB_DIRECTORY = "/home/neilpquinn-wmf/2021-KaiOS-app-homepage-content-suggestions/trending_articles"
+
 # A CSV holding past trending articles, for rate-limiting frequent entries and as a log
-ARCHIVE_FILE = "/home/neilpquinn-wmf/2021-KaiOS-app-homepage-content-suggestions/trending_articles.csv"
-QUERY_FILE = "/home/neilpquinn-wmf/2021-KaiOS-app-homepage-content-suggestions/trending_articles_for_country_day.sql"
+ARCHIVE_FILE = JOB_DIRECTORY + "/trending_articles.csv"
+QUERY_FILE = JOB_DIRECTORY + "/trending_articles_for_country_day.sql"
 
 # Mapping of trending article lists to recommendation pages
 # Every list goes on its own country's page for production plus others for testing
